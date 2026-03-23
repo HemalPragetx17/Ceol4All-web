@@ -4,9 +4,6 @@ import * as Tone from "tone";
 type NoteType = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "rest";
 
 type OrnamentType =
-  | "cut"
-  | "tap"
-  | "roll"
   | "triplet"
   | "cran"
   | "slide"
@@ -22,6 +19,11 @@ interface Note {
 
   // ✅ NEW
   cranGraceNotes?: string[];
+
+  // Triplet visual grouping: four underlying note pitches
+  // and which adjacent pair (0-2) gets the short second beam.
+  tripletPitches?: string[];
+  tripletSecondaryPairIndex?: number;
 }
 
 const CRAN_MAP: Record<string, string[]> = {
@@ -114,9 +116,6 @@ const ORNAMENT_PALETTE_ITEMS: {
   symbol: string;
   label: string;
 }[] = [
-  { type: "cut", label: "Cut", symbol: "C" },
-  { type: "tap", label: "Tap", symbol: "T" },
-  { type: "roll", label: "Roll", symbol: "R" },
   { type: "triplet", label: "Triplet", symbol: "3" },
   { type: "cran", label: "Cran", symbol: "Cr" },
   { type: "slide", label: "Slide", symbol: "S" },
@@ -124,9 +123,6 @@ const ORNAMENT_PALETTE_ITEMS: {
 ];
 
 const ORNAMENT_SYMBOL_MAP: Record<OrnamentType, string> = {
-  cut: "C",
-  tap: "T",
-  roll: "R",
   triplet: "3",
   cran: "Cr",
   slide: "S",
@@ -149,12 +145,6 @@ const getOrnamentPattern = (pitch: string, ornament: OrnamentType): string[] => 
   const up2 = getRelativePitch(pitch, 2);
 
   switch (ornament) {
-    case "cut":
-      return [up];
-    case "tap":
-      return [down];
-    case "roll":
-      return [up, pitch, down];
     case "triplet":
       return [pitch, up, pitch];
     case "cran":
@@ -271,9 +261,6 @@ type AnnotatedToken = {
 };
 
 const ORNAMENT_KEYWORDS: Record<string, OrnamentType> = {
-  cut: "cut",
-  tap: "tap",
-  roll: "roll",
   triplet: "triplet",
   cran: "cran",
   cr: "cran",
@@ -595,6 +582,12 @@ const CustomCompositor = () => {
               : CRAN_MAP[note.pitch] || [];
 
           pattern = cranNotes;
+        } else if (orn === "triplet") {
+          // For grouped triplets, prefer the stored tripletPitches for playback
+          pattern =
+            note.tripletPitches?.length
+              ? note.tripletPitches
+              : getOrnamentPattern(note.pitch, orn);
         } else {
           pattern = getOrnamentPattern(note.pitch, orn);
         }
@@ -760,7 +753,82 @@ const CustomCompositor = () => {
         }
       });
 
-      if (closestNote && draggingOrnamentType === "cran") {
+      if (closestNote && draggingOrnamentType === "triplet") {
+        const anchor: any = closestNote;
+        const dropX = x;
+
+        setNotes((prev) => {
+          // Determine the bar of the anchor note from its x-position
+          const anchorBar = Math.max(
+            0,
+            Math.min(
+              TOTAL_BARS - 1,
+              Math.floor((anchor.x - 40) / BAR_WIDTH),
+            ),
+          );
+
+          // Consider only notes in the same bar (non-rest)
+          const barNotes = prev
+            .filter((n) => {
+              if (n.type === "rest") return false;
+              const barIndex = Math.max(
+                0,
+                Math.min(
+                  TOTAL_BARS - 1,
+                  Math.floor((n.x - 40) / BAR_WIDTH),
+                ),
+              );
+              return barIndex === anchorBar;
+            })
+            .sort((a, b) => a.x - b.x);
+
+          const group = barNotes.slice(0, 4);
+
+          // Require at least 4 notes in this bar to form a triplet group;
+          // if not, leave everything unchanged (no triplet applied).
+          if (group.length < 4) {
+            return prev;
+          }
+
+          const base = group[0];
+          const tripletPitches = group.map((n) => n.pitch);
+          const avgX = group.reduce((sum, n) => sum + n.x, 0) / group.length;
+
+          // Decide which adjacent pair (0-1, 1-2, or 2-3) gets the short beam
+          const pairMidpoints = [
+            (group[0].x + group[1].x) / 2,
+            (group[1].x + group[2].x) / 2,
+            (group[2].x + group[3].x) / 2,
+          ];
+
+          let bestIndex = 1; // default to middle pair
+          let bestDist = Infinity;
+          pairMidpoints.forEach((mid, idx) => {
+            const d = Math.abs(mid - dropX);
+            if (d < bestDist) {
+              bestDist = d;
+              bestIndex = idx;
+            }
+          });
+
+          const newNote: Note = {
+            id: Date.now(),
+            pitch: base.pitch,
+            x: avgX,
+            y: getYFromPitch(base.pitch),
+            type: "eighth",
+            ornaments: [...(base.ornaments ?? []), "triplet"],
+            tripletPitches,
+            tripletSecondaryPairIndex: bestIndex,
+          };
+
+          const remaining = prev.filter(
+            (n) => !group.some((g) => g.id === n.id),
+          );
+
+          return [...remaining, newNote];
+        });
+      } else if (closestNote && draggingOrnamentType === "cran") {
         // Merge nearby notes into a single cran group based on their pitches
         const anchor: any = closestNote; // non-null guard for TypeScript
         setNotes((prev) => {
@@ -899,12 +967,14 @@ const CustomCompositor = () => {
     }
 
     const { x, y, type } = note;
-    const pitch = "pitch" in note ? note.pitch : getPitchFromY(y);
-    const ornaments = "ornaments" in note ? note.ornaments : undefined;
+    const fullNote = note as Note;
+    const pitch = "pitch" in note ? fullNote.pitch : getPitchFromY(y);
+    const ornaments = fullNote.ornaments;
 
-    // ✅ NEW: Get cran grace notes
-    const cranGraceNotes =
-      "cranGraceNotes" in note ? note.cranGraceNotes : undefined;
+    // ✅ NEW: Get cran and triplet grouping data
+    const cranGraceNotes = fullNote.cranGraceNotes;
+    const tripletPitches = fullNote.tripletPitches;
+    const tripletSecondaryPairIndex = fullNote.tripletSecondaryPairIndex;
 
     // ============================
     // ✅ UPDATED CRAN RENDERING
@@ -946,8 +1016,6 @@ const CustomCompositor = () => {
         `${firstStem.x},${beamY - beamThickness}`,
       ].join(" ");
 
-      const nonCranOrnaments = ornaments.filter((o) => o !== "cran");
-
       return (
         <g transform={`translate(${x}, ${y})`}>
           {/* Click area */}
@@ -981,10 +1049,145 @@ const CustomCompositor = () => {
           {/* ✅ BEAM */}
           <polygon points={beamPoints} fill={isActive ? highlightColor : color} />
 
-          {/* Extra ornaments */}
-          {nonCranOrnaments.length > 0 && (
+        </g>
+      );
+    }
+
+    // ============================
+    // ✅ TRIPLET RENDERING
+    // ============================
+    if (!isGhost && ornaments?.includes("triplet") && pitch) {
+      // Prefer explicit grouped pitches (from drag-drop) and support 4 notes
+      const pitches =
+        tripletPitches?.length && tripletPitches.length >= 2
+          ? tripletPitches
+          : getOrnamentPattern(pitch, "triplet");
+
+      const count = pitches.length;
+      const stepX = 16; // further increased spacing between triplet notes
+      const offsetStart = -((count - 1) / 2) * stepX;
+      const visualNotes = pitches.map((p, i) => ({
+        relX: offsetStart + i * stepX,
+        relY: getYFromPitch(p) - y,
+      }));
+
+      const beamThickness = 4;
+
+      const highestNoteY = Math.min(...visualNotes.map((v) => v.relY));
+      const beamY = highestNoteY - 25;
+
+      const stems = visualNotes.map((v) => ({
+        x: v.relX + 6,
+        yBottom: v.relY,
+        yTop: beamY,
+      }));
+
+      const firstStem = stems[0];
+      const lastStem = stems[stems.length - 1];
+
+      // Main beam across all notes in the group
+      const mainBeamPoints = [
+        `${firstStem.x},${beamY}`,
+        `${lastStem.x},${beamY}`,
+        `${lastStem.x},${beamY - beamThickness}`,
+        `${firstStem.x},${beamY - beamThickness}`,
+      ].join(" ");
+
+      // Second beam only between a chosen adjacent pair
+      let secondBeamPoints: string | null = null;
+      if (stems.length >= 2) {
+        const idx =
+          typeof tripletSecondaryPairIndex === "number" &&
+          tripletSecondaryPairIndex >= 0 &&
+          tripletSecondaryPairIndex < stems.length - 1
+            ? tripletSecondaryPairIndex
+            : 0;
+
+        const secondBeamY = beamY + beamThickness + 7; // extra vertical gap between beams
+        const s0 = stems[idx];
+        const s1 = stems[idx + 1];
+        secondBeamPoints = [
+          `${s0.x},${secondBeamY}`,
+          `${s1.x},${secondBeamY}`,
+          `${s1.x},${secondBeamY - beamThickness}`,
+          `${s0.x},${secondBeamY - beamThickness}`,
+        ].join(" ");
+      }
+
+      const nonTripletOrnaments = ornaments.filter((o) => o !== "triplet");
+
+      const handleTripletClick = (e: React.MouseEvent<SVGGElement>) => {
+        e.stopPropagation();
+        setNotes((prev) =>
+          prev.map((n) => {
+            if (n.id !== fullNote.id) return n;
+
+            const count = n.tripletPitches?.length ?? 0;
+            const maxPairIndex = Math.max(0, count - 2); // for 4 notes => 2 (pairs 0-1,1-2,2-3)
+
+            const current =
+              typeof n.tripletSecondaryPairIndex === "number"
+                ? n.tripletSecondaryPairIndex
+                : 0;
+
+            const next = maxPairIndex > 0 ? (current + 1) % (maxPairIndex + 1) : 0;
+
+            return {
+              ...n,
+              tripletSecondaryPairIndex: next,
+            };
+          }),
+        );
+      };
+
+      return (
+        <g transform={`translate(${x}, ${y})`} onClick={handleTripletClick}>
+          {/* Click area */}
+          <circle cx={0} cy={0} r={14} fill="transparent" />
+
+          {/* Triplet note heads */}
+          {visualNotes.map((v, i) => (
+            <ellipse
+              key={i}
+              cx={v.relX}
+              cy={v.relY}
+              rx={5}
+              ry={4}
+              fill={isActive ? highlightColor : color}
+            />
+          ))}
+
+          {/* Stems */}
+          {stems.map((s, i) => (
+            <line
+              key={i}
+              x1={s.x}
+              y1={s.yBottom}
+              x2={s.x}
+              y2={s.yTop}
+              stroke={isActive ? highlightColor : color}
+              strokeWidth={1.5}
+            />
+          ))}
+
+          {/* Main beam */}
+          <polygon
+            points={mainBeamPoints}
+            fill={isActive ? highlightColor : color}
+          />
+
+          {/* Second, shorter beam between first two notes */}
+          {secondBeamPoints && (
+            <polygon
+              points={secondBeamPoints}
+              fill={isActive ? highlightColor : color}
+            />
+          )}
+
+          {/* Any other ornaments except triplet */}
+          {nonTripletOrnaments.length > 0 && (
             <g transform="translate(0, -40)">
-              {nonCranOrnaments.map((orn, i) => (
+              {nonTripletOrnaments.map((orn, i) => (
                 <text
                   key={i}
                   x={i * 10}
@@ -1064,7 +1267,11 @@ const CustomCompositor = () => {
         {ornaments && (
           <g transform="translate(0, -36)">
             {ornaments
-              .filter((o) => o !== "cran")
+              .filter(
+                (o) =>
+                  o !== "cran" &&
+                  o !== "triplet"
+              )
               .map((orn, i) => (
                 <text key={i} x={i * 10} y={0} fontSize="8">
                   {ORNAMENT_SYMBOL_MAP[orn]}
