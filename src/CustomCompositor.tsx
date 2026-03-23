@@ -6,8 +6,6 @@ type NoteType = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "rest";
 type OrnamentType =
   | "triplet"
   | "cran"
-  | "slide"
-  | "vibrato";
 
 interface Note {
   id: number;
@@ -185,17 +183,13 @@ const ORNAMENT_PALETTE_ITEMS: {
   symbol: string;
   label: string;
 }[] = [
-  { type: "triplet", label: "Triplet", symbol: "3" },
+  { type: "triplet", label: "Triplet", symbol: "Tr" },
   { type: "cran", label: "Cran", symbol: "Cr" },
-  { type: "slide", label: "Slide", symbol: "S" },
-  { type: "vibrato", label: "Vibrato", symbol: "V" },
 ];
 
 const ORNAMENT_SYMBOL_MAP: Record<OrnamentType, string> = {
-  triplet: "3",
+  triplet: "Tr",
   cran: "Cr",
-  slide: "S",
-  vibrato: "Vib",
 };
 
 const getRelativePitch = (pitch: string, steps: number) => {
@@ -218,10 +212,6 @@ const getOrnamentPattern = (pitch: string, ornament: OrnamentType): string[] => 
       return [pitch, up, pitch];
     case "cran":
       return [up2, up, pitch];
-    case "slide":
-      return [down, pitch];
-    case "vibrato":
-      return [pitch, up, pitch, down, pitch];
     default:
       return [];
   }
@@ -333,9 +323,6 @@ const ORNAMENT_KEYWORDS: Record<string, OrnamentType> = {
   triplet: "triplet",
   cran: "cran",
   cr: "cran",
-  slide: "slide",
-  vibrato: "vibrato",
-  vib: "vibrato",
 };
 
 const parseAnnotatedText = (raw: string): AnnotatedToken[] => {
@@ -918,6 +905,8 @@ const CustomCompositor = () => {
         });
       } else if (closestNote && draggingOrnamentType === "cran") {
         // Merge nearby notes into a single cran group based on their pitches
+        // Only create a cran if there are between 2 and 4 existing notes;
+        // otherwise, do nothing (no auto-generated cran notes).
         const anchor: any = closestNote; // non-null guard for TypeScript
         setNotes((prev) => {
           const windowPx = 80;
@@ -930,18 +919,9 @@ const CustomCompositor = () => {
 
           const group = candidates.slice(0, 4);
 
-          if (group.length <= 1) {
-            // Not enough notes to form a group, just attach cran to the note
-            return prev.map((n) =>
-              n.id === anchor.id
-                ? {
-                  ...n,
-                  ornaments: [...(n.ornaments ?? []), "cran"],
-                  cranGraceNotes:
-                    n.cranGraceNotes || CRAN_MAP[n.pitch] || undefined,
-                }
-                : n,
-            );
+          // Require at least 2 notes (and at most 4 due to slice) to form a cran
+          if (group.length < 2) {
+            return prev;
           }
 
           const base = group[0];
@@ -978,22 +958,6 @@ const CustomCompositor = () => {
               : n,
           ),
         );
-      } else if (draggingOrnamentType === "cran") {
-        // Allow creating a new cran group directly via drag-and-drop
-        const pitch = getPitchFromY(y);
-        const newNote: Note = {
-          id: Date.now(),
-          pitch,
-          x,
-          y: getYFromPitch(pitch),
-          type: "eighth",
-          ornaments: ["cran"],
-
-          // ✅ NEW default cran pattern
-          cranGraceNotes: CRAN_MAP[pitch] || [],
-        };
-
-        setNotes((prev) => [...prev, newNote]);
       }
     } else if (draggingNewType && svgRef.current) {
       const rect = svgRef.current.getBoundingClientRect();
@@ -1206,7 +1170,9 @@ const CustomCompositor = () => {
         ].join(" ");
       }
 
-      const nonTripletOrnaments = ornaments.filter((o) => o !== "triplet");
+      const nonTripletOrnaments = ornaments.filter(
+        (o) => o !== "triplet",
+      );
 
       const handleTripletClick = (e: React.MouseEvent<SVGGElement>) => {
         e.stopPropagation();
