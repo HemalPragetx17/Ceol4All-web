@@ -1024,10 +1024,55 @@ const CustomCompositor = () => {
     const pitch = "pitch" in note ? fullNote.pitch : getPitchFromY(y);
     const ornaments = fullNote.ornaments;
 
-    // ✅ NEW: Get cran and triplet grouping data
     const cranGraceNotes = fullNote.cranGraceNotes;
     const tripletPitches = fullNote.tripletPitches;
     const tripletSecondaryPairIndex = fullNote.tripletSecondaryPairIndex;
+
+    const renderLedgerLines = (relX: number, relY: number) => {
+      const lines = [];
+      const colorLocal = isActive ? highlightColor : color;
+      const absY = y + relY;
+
+      // Above staff (top line is 230)
+      if (isActivated && absY <= 220) {
+        for (let ly = 220; ly >= absY; ly -= 10) {
+          if ((ly - 250) % 10 === 0) {
+            lines.push(
+              <line
+                key={`up-${ly}-${relX}`}
+                x1={relX - 12}
+                y1={ly - y}
+                x2={relX + 12}
+                y2={ly - y}
+                stroke={colorLocal}
+                strokeWidth="1.5"
+                opacity={isGhost ? 0.4 : 1}
+              />
+            );
+          }
+        }
+      }
+      // Below staff (bottom line is 270)
+      if (isActivated && absY >= 280) {
+        for (let ly = 280; ly <= absY; ly += 10) {
+          if ((ly - 250) % 10 === 0) {
+            lines.push(
+              <line
+                key={`down-${ly}-${relX}`}
+                x1={relX - 12}
+                y1={ly - y}
+                x2={relX + 12}
+                y2={ly - y}
+                stroke={colorLocal}
+                strokeWidth="1.5"
+                opacity={isGhost ? 0.4 : 1}
+              />
+            );
+          }
+        }
+      }
+      return lines;
+    };
 
     // ============================
     // ✅ UPDATED CRAN RENDERING
@@ -1076,6 +1121,13 @@ const CustomCompositor = () => {
         <g transform={`translate(${x}, ${y})`}>
           {/* Click area */}
           <circle cx={0} cy={0} r={14} fill="transparent" />
+
+          {/* Ledger lines for each note head */}
+          {visualNotes.map((v, i) => (
+            <React.Fragment key={`ledger-${i}`}>
+              {renderLedgerLines(v.relX, v.relY)}
+            </React.Fragment>
+          ))}
 
           {/* ✅ NOTE HEADS WITH REAL HEIGHT */}
           {visualNotes.map((v, i) => (
@@ -1203,6 +1255,13 @@ const CustomCompositor = () => {
           {/* Click area */}
           <circle cx={0} cy={0} r={14} fill="transparent" />
 
+          {/* Ledger lines for each note head */}
+          {visualNotes.map((v, i) => (
+            <React.Fragment key={`ledger-${i}`}>
+              {renderLedgerLines(v.relX, v.relY)}
+            </React.Fragment>
+          ))}
+
           {/* Triplet note heads */}
           {visualNotes.map((v, i) => (
             <ellipse
@@ -1265,52 +1324,9 @@ const CustomCompositor = () => {
     // ============================
     // DEFAULT NOTE RENDER
     // ============================
-    // Render ledger lines helper
-    const renderLedgerLines = () => {
-      const lines = [];
-      const colorLocal = isActive ? highlightColor : color;
-      // Above staff (top line is 230)
-      if (isActivated && y <= 220) {
-        for (let ly = 220; ly >= y; ly -= 10) {
-          if ((ly - 250) % 10 === 0) { // Should be a line position
-            lines.push(
-              <line
-                key={`up-${ly}`}
-                x1={-12}
-                y1={ly - y}
-                x2={12}
-                y2={ly - y}
-                stroke={colorLocal}
-                strokeWidth="1.5"
-              />
-            );
-          }
-        }
-      }
-      // Below staff (bottom line is 270)
-      if (isActivated && y >= 280) {
-        for (let ly = 280; ly <= y; ly += 10) {
-          if ((ly - 250) % 10 === 0) { // Should be a line position
-            lines.push(
-              <line
-                key={`down-${ly}`}
-                x1={-12}
-                y1={ly - y}
-                x2={12}
-                y2={ly - y}
-                stroke={colorLocal}
-                strokeWidth="1.5"
-              />
-            );
-          }
-        }
-      }
-      return lines;
-    };
-
     return (
       <g transform={`translate(${x}, ${y})`}>
-        {renderLedgerLines()}
+        {renderLedgerLines(0, 0)}
         {type === "whole" ? (
           <ellipse
             cx="0"
