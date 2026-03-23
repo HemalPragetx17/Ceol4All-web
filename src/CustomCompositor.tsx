@@ -37,27 +37,96 @@ const CRAN_MAP: Record<string, string[]> = {
 };
 
 const PITCH_HEIGHTS = [
-  { pitch: "D6", y: 25 },
-  { pitch: "C#6", y: 30 },
-  { pitch: "B5", y: 35 },
-  { pitch: "A5", y: 40 },
-  { pitch: "G5", y: 45 },
-  { pitch: "F#5", y: 50 },
-  { pitch: "E5", y: 55 },
-  { pitch: "D5", y: 60 },
-  { pitch: "C#5", y: 65 },
-  { pitch: "B4", y: 70 },
-  { pitch: "A4", y: 75 },
-  { pitch: "G4", y: 80 },
-  { pitch: "F#4", y: 85 },
-  { pitch: "E4", y: 90 },
-  { pitch: "D4", y: 95 },
-  { pitch: "C4", y: 100 }, // Added buffer for easier bottom placement
-  { pitch: "B3", y: 105 }, // Added buffer
-  { pitch: "C4", y: 100 }, // Added buffer for easier bottom placement
-  { pitch: "B3", y: 105 }, // Added buffer
-  { pitch: "C4", y: 100 }, // Added buffer for easier bottom placement
-  { pitch: "B3", y: 105 }, // Added buffer
+  // Octave 10 (partial)
+  { pitch: "D10", y: 65 },
+  { pitch: "C#10", y: 70 },
+  { pitch: "B9", y: 75 },
+  { pitch: "A9", y: 80 },
+  { pitch: "G9", y: 85 },
+  { pitch: "F#9", y: 90 },
+  { pitch: "E9", y: 95 },
+  // Octave 9
+  { pitch: "D9", y: 100 },
+  { pitch: "C#9", y: 105 },
+  { pitch: "B8", y: 110 },
+  { pitch: "A8", y: 115 },
+  { pitch: "G8", y: 120 },
+  { pitch: "F#8", y: 125 },
+  { pitch: "E8", y: 130 },
+  // Octave 8
+  { pitch: "D8", y: 135 },
+  { pitch: "C#8", y: 140 },
+  { pitch: "B7", y: 145 },
+  { pitch: "A7", y: 150 },
+  { pitch: "G7", y: 155 },
+  { pitch: "F#7", y: 160 },
+  { pitch: "E7", y: 165 },
+  // Octave 7
+  { pitch: "D7", y: 170 },
+  { pitch: "C#7", y: 175 },
+  { pitch: "B6", y: 180 },
+  { pitch: "A6", y: 185 },
+  { pitch: "G6", y: 190 },
+  { pitch: "F#6", y: 195 },
+  { pitch: "E6", y: 200 },
+  // Octave 6
+  { pitch: "D6", y: 205 },
+  { pitch: "C#6", y: 210 },
+  { pitch: "B5", y: 215 },
+  { pitch: "A5", y: 220 },
+  { pitch: "G5", y: 225 },
+  { pitch: "F#5", y: 230 },
+  { pitch: "E5", y: 235 },
+  // Octave 5
+  { pitch: "D5", y: 240 },
+  { pitch: "C#5", y: 245 },
+  { pitch: "B4", y: 250 },
+  { pitch: "A4", y: 255 },
+  { pitch: "G4", y: 260 },
+  { pitch: "F#4", y: 265 },
+  { pitch: "E4", y: 270 },
+  // Octave 4
+  { pitch: "D4", y: 275 },
+  { pitch: "C#4", y: 280 },
+  { pitch: "B3", y: 285 },
+  { pitch: "A3", y: 290 },
+  { pitch: "G3", y: 295 },
+  { pitch: "F#3", y: 300 },
+  { pitch: "E3", y: 305 },
+  // Octave 3
+  { pitch: "D3", y: 310 },
+  { pitch: "C#3", y: 315 },
+  { pitch: "B2", y: 320 },
+  { pitch: "A2", y: 325 },
+  { pitch: "G2", y: 330 },
+  { pitch: "F#2", y: 335 },
+  { pitch: "E2", y: 340 },
+  // Octave 2
+  { pitch: "D2", y: 345 },
+  { pitch: "C#2", y: 350 },
+  { pitch: "B1", y: 355 },
+  { pitch: "A1", y: 360 },
+  { pitch: "G1", y: 365 },
+  { pitch: "F#1", y: 370 },
+  { pitch: "E1", y: 375 },
+  // Octave 1
+  { pitch: "E0", y: 410 },
+  { pitch: "D0", y: 415 },
+  { pitch: "C#0", y: 420 },
+  { pitch: "B-1", y: 425 },
+  { pitch: "A-1", y: 430 },
+  { pitch: "G-1", y: 435 },
+  { pitch: "F#-1", y: 440 },
+  { pitch: "E-1", y: 445 },
+  { pitch: "D-1", y: 450 },
+  { pitch: "C#-1", y: 455 },
+  { pitch: "B-2", y: 460 },
+  { pitch: "A-2", y: 465 },
+  { pitch: "G-2", y: 470 },
+  { pitch: "F#-2", y: 475 },
+  { pitch: "E-2", y: 480 },
+  { pitch: "D-2", y: 485 },
+  { pitch: "C#-2", y: 490 },
 ];
 
 const getYFromPitch = (pitch: string): number => {
@@ -79,12 +148,12 @@ const getPitchFromY = (y: number): string => {
   return nearest.pitch;
 };
 
-const STAFF_LINES = [50, 60, 70, 80, 90];
+const STAFF_LINES = [230, 240, 250, 260, 270];
 const SNAP_Y = 5;
 const BAR_WIDTH = 200;
 const TOTAL_BARS = 4;
 const STAFF_WIDTH = BAR_WIDTH * TOTAL_BARS;
-const STAFF_HEIGHT = 250; // Increased height to prevent clipping at bottom
+const STAFF_HEIGHT = 500; // Decreased height slightly as requested
 
 const DUR_MAP: Record<NoteType, string> = {
   whole: "1n",
@@ -482,10 +551,12 @@ const CustomCompositor = () => {
   const [isTextImportOpen, setIsTextImportOpen] = useState(false);
   const [textImportValue, setTextImportValue] = useState("");
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+  const [ghostActivated, setGhostActivated] = useState(false); // Track if palette drag entered staff
   const svgRef = useRef<SVGSVGElement>(null);
   const synth = useRef<Tone.MonoSynth | null>(null);
   const lastPlayTime = useRef<number>(0);
   const playheadInterval = useRef<number | null>(null);
+  const lastDraggedPitch = useRef<string | null>(null);
 
   useEffect(() => {
     synth.current = new Tone.MonoSynth({
@@ -498,8 +569,8 @@ const CustomCompositor = () => {
       },
       filterEnvelope: {
         attack: 0.05,
-        baseFrequency: 200,
-        octaves: 4,
+        baseFrequency: 20, // Lowered significantly to allow low notes to pass
+        octaves: 7, // Increased octaves for a wider range
       },
     }).toDestination();
 
@@ -663,6 +734,7 @@ const CustomCompositor = () => {
     if (Tone.getContext().state !== "running") await Tone.start();
     setSelectedNoteId(id);
     setDraggingNoteId(id);
+    lastDraggedPitch.current = null; // Reset for drag
   };
 
   const handleClickOnNote = (e: React.MouseEvent, id: number) => {
@@ -676,6 +748,8 @@ const CustomCompositor = () => {
   ) => {
     if (Tone.getContext().state !== "running") await Tone.start();
     setDraggingNewType(type);
+    setGhostActivated(false); // Reset on start
+    lastDraggedPitch.current = null; // Reset for drag
     const rect = svgRef.current?.getBoundingClientRect();
     if (rect) {
       setNewNotePos({
@@ -712,6 +786,11 @@ const CustomCompositor = () => {
 
       const pitch = getPitchFromY(y);
 
+      if (pitch !== lastDraggedPitch.current) {
+        playPitch(pitch, draggingNote.type);
+        lastDraggedPitch.current = pitch;
+      }
+
       setNotes((prev) =>
         prev.map((n) => {
           if (n.id === draggingNoteId) {
@@ -727,6 +806,15 @@ const CustomCompositor = () => {
       );
     } else if (draggingNewType) {
       setNewNotePos({ x, y });
+      const pitch = getPitchFromY(y);
+      if (pitch !== lastDraggedPitch.current) {
+        if (draggingNewType !== "rest") playPitch(pitch, draggingNewType);
+        lastDraggedPitch.current = pitch;
+      }
+      // Activate if it hits the staff area
+      if (y >= 230 && y <= 270) {
+        setGhostActivated(true);
+      }
     } else if (draggingOrnamentType) {
       setOrnamentPos({ x, y });
     }
@@ -847,11 +935,11 @@ const CustomCompositor = () => {
             return prev.map((n) =>
               n.id === anchor.id
                 ? {
-                    ...n,
-                    ornaments: [...(n.ornaments ?? []), "cran"],
-                    cranGraceNotes:
-                      n.cranGraceNotes || CRAN_MAP[n.pitch] || undefined,
-                  }
+                  ...n,
+                  ornaments: [...(n.ornaments ?? []), "cran"],
+                  cranGraceNotes:
+                    n.cranGraceNotes || CRAN_MAP[n.pitch] || undefined,
+                }
                 : n,
             );
           }
@@ -884,9 +972,9 @@ const CustomCompositor = () => {
           prev.map((n) =>
             n.id === anchor.id
               ? {
-                  ...n,
-                  ornaments: [...(n.ornaments ?? []), draggingOrnamentType],
-                }
+                ...n,
+                ornaments: [...(n.ornaments ?? []), draggingOrnamentType],
+              }
               : n,
           ),
         );
@@ -948,6 +1036,7 @@ const CustomCompositor = () => {
       | { type: NoteType; x: number; y: number; id?: number; pitch?: string },
     isGhost = false,
   ) => {
+    const isActivated = !isGhost || ghostActivated;
     const color = isGhost ? "rgba(44, 62, 80, 0.4)" : "#2c3e50";
     const highlightColor = "#3498db";
     const isActive =
@@ -993,15 +1082,18 @@ const CustomCompositor = () => {
         relY: getYFromPitch(p) - y, // ✅ REAL HEIGHT
       }));
 
+      const stemDown = isActivated && y <= 250;
       const beamThickness = 4;
 
-      // Place the beam a fixed distance above the highest grace note so it
-      // looks clean and horizontal regardless of the pitches.
-      const highestNoteY = Math.min(...visualNotes.map((v) => v.relY));
-      const beamY = highestNoteY - 30; // raise beam higher above heads
+      // Determine beam position: below notes if stems are down, above if stems are up
+      const referenceY = stemDown
+        ? Math.max(...visualNotes.map((v) => v.relY))
+        : Math.min(...visualNotes.map((v) => v.relY));
+
+      const beamY = referenceY + (stemDown ? 30 : -30);
 
       const stems = visualNotes.map((v) => ({
-        x: v.relX + 6,
+        x: v.relX + (stemDown ? -5 : 5), // Stem on left if down, right if up
         yBottom: v.relY,
         yTop: beamY,
       }));
@@ -1012,8 +1104,8 @@ const CustomCompositor = () => {
       const beamPoints = [
         `${firstStem.x},${beamY}`,
         `${lastStem.x},${beamY}`,
-        `${lastStem.x},${beamY - beamThickness}`,
-        `${firstStem.x},${beamY - beamThickness}`,
+        `${lastStem.x},${beamY + (stemDown ? beamThickness : -beamThickness)}`,
+        `${firstStem.x},${beamY + (stemDown ? beamThickness : -beamThickness)}`,
       ].join(" ");
 
       return (
@@ -1207,8 +1299,52 @@ const CustomCompositor = () => {
     // ============================
     // DEFAULT NOTE RENDER
     // ============================
+    // Render ledger lines helper
+    const renderLedgerLines = () => {
+      const lines = [];
+      const colorLocal = isActive ? highlightColor : color;
+      // Above staff (top line is 230)
+      if (isActivated && y <= 220) {
+        for (let ly = 220; ly >= y; ly -= 10) {
+          if ((ly - 250) % 10 === 0) { // Should be a line position
+            lines.push(
+              <line
+                key={`up-${ly}`}
+                x1={-12}
+                y1={ly - y}
+                x2={12}
+                y2={ly - y}
+                stroke={colorLocal}
+                strokeWidth="1.5"
+              />
+            );
+          }
+        }
+      }
+      // Below staff (bottom line is 270)
+      if (isActivated && y >= 280) {
+        for (let ly = 280; ly <= y; ly += 10) {
+          if ((ly - 250) % 10 === 0) { // Should be a line position
+            lines.push(
+              <line
+                key={`down-${ly}`}
+                x1={-12}
+                y1={ly - y}
+                x2={12}
+                y2={ly - y}
+                stroke={colorLocal}
+                strokeWidth="1.5"
+              />
+            );
+          }
+        }
+      }
+      return lines;
+    };
+
     return (
       <g transform={`translate(${x}, ${y})`}>
+        {renderLedgerLines()}
         {type === "whole" ? (
           <ellipse
             cx="0"
@@ -1222,45 +1358,58 @@ const CustomCompositor = () => {
           />
         ) : (
           <>
-            {type === "half" ? (
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="7"
-                ry="5"
-                stroke={isActive ? highlightColor : color}
-                strokeWidth="2"
-                fill="white"
-                transform="rotate(-20)"
-              />
-            ) : (
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="7"
-                ry="5"
-                fill={isActive ? highlightColor : color}
-                transform="rotate(-20)"
-              />
-            )}
+            {(() => {
+              const stemDown = isActivated && y <= 250;
+              const stemX = stemDown ? -6 : 6;
+              const stemYEnd = stemDown ? 25 : -25;
+              const flagPath = stemDown
+                ? "M -6 25 C -2 20 3 15 3 10" // Downward flag
+                : "M 6 -25 C 10 -20 15 -15 15 -10"; // Upward flag
 
-            <line
-              x1="6"
-              y1="0"
-              x2="6"
-              y2="-25"
-              stroke={isActive ? highlightColor : color}
-              strokeWidth="1.5"
-            />
+              return (
+                <>
+                  {type === "half" ? (
+                    <ellipse
+                      cx="0"
+                      cy="0"
+                      rx="7"
+                      ry="5"
+                      stroke={isActive ? highlightColor : color}
+                      strokeWidth="2"
+                      fill="white"
+                      transform="rotate(-20)"
+                    />
+                  ) : (
+                    <ellipse
+                      cx="0"
+                      cy="0"
+                      rx="7"
+                      ry="5"
+                      fill={isActive ? highlightColor : color}
+                      transform="rotate(-20)"
+                    />
+                  )}
 
-            {type === "eighth" && (
-              <path
-                d="M 6 -25 C 10 -20 15 -15 15 -10"
-                stroke={isActive ? highlightColor : color}
-                strokeWidth="2"
-                fill="none"
-              />
-            )}
+                  <line
+                    x1={stemX}
+                    y1="0"
+                    x2={stemX}
+                    y2={stemYEnd}
+                    stroke={isActive ? highlightColor : color}
+                    strokeWidth="1.5"
+                  />
+
+                  {type === "eighth" && (
+                    <path
+                      d={flagPath}
+                      stroke={isActive ? highlightColor : color}
+                      strokeWidth="2"
+                      fill="none"
+                    />
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
 
@@ -1311,6 +1460,7 @@ const CustomCompositor = () => {
         <h1
           style={{
             color: "#2c3e50",
+            fontSize: "1.8rem",
             marginBottom: "10px",
             textAlign: "center",
           }}
@@ -1342,8 +1492,9 @@ const CustomCompositor = () => {
                 backgroundColor: isPlaying ? "#bdc3c7" : "#2ecc71",
                 color: "white",
                 border: "none",
-                padding: "10px 15px",
+                padding: "8px 12px",
                 borderRadius: "8px",
+                fontSize: "14px",
                 cursor: "pointer",
                 fontWeight: "bold",
               }}
@@ -1357,8 +1508,9 @@ const CustomCompositor = () => {
                 backgroundColor: !isPlaying ? "#bdc3c7" : "#f39c12",
                 color: "white",
                 border: "none",
-                padding: "10px 15px",
+                padding: "8px 12px",
                 borderRadius: "8px",
+                fontSize: "14px",
                 cursor: "pointer",
                 fontWeight: "bold",
               }}
@@ -1371,8 +1523,9 @@ const CustomCompositor = () => {
                 backgroundColor: "#e74c3c",
                 color: "white",
                 border: "none",
-                padding: "10px 15px",
+                padding: "8px 12px",
                 borderRadius: "8px",
+                fontSize: "14px",
                 cursor: "pointer",
                 fontWeight: "bold",
               }}
@@ -1394,12 +1547,12 @@ const CustomCompositor = () => {
               type="button"
               onClick={() => setIsTextImportOpen((open) => !open)}
               style={{
-                padding: "8px 12px",
+                padding: "6px 10px",
                 borderRadius: "8px",
                 border: "none",
                 backgroundColor: isTextImportOpen ? "#7f8c8d" : "#16a085",
                 color: "white",
-                fontSize: "12px",
+                fontSize: "11px",
                 cursor: "pointer",
                 fontWeight: 600,
                 boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
@@ -1421,16 +1574,16 @@ const CustomCompositor = () => {
                 <div
                   onMouseDown={(e) => handleMouseDownOnPalette(e, item.type)}
                   style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "12px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "10px",
                     backgroundColor: "#2c3e50",
                     cursor: "grab",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
                     color: "white",
-                    fontSize: "24px",
+                    fontSize: "20px",
                     boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
                   }}
                 >
@@ -1519,16 +1672,16 @@ const CustomCompositor = () => {
                   handleMouseDownOnOrnamentPalette(e, item.type)
                 }
                 style={{
-                  width: "50px",
-                  height: "36px",
-                  borderRadius: "10px",
+                  width: "40px",
+                  height: "32px",
+                  borderRadius: "8px",
                   backgroundColor: "#34495e",
                   cursor: "grab",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
                   color: "white",
-                  fontSize: "16px",
+                  fontSize: "14px",
                   boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
                 }}
               >
@@ -1586,22 +1739,22 @@ const CustomCompositor = () => {
               <line
                 key={i}
                 x1={40 + i * BAR_WIDTH}
-                y1={50}
+                y1={230}
                 x2={40 + i * BAR_WIDTH}
-                y2={90}
+                y2={270}
                 stroke="#dcdde1"
                 strokeWidth="1"
               />
             ))}
-            <text x="10" y="95" fontSize="60" fill="#2c3e50" opacity="0.3">
+            <text x="10" y="275" fontSize="60" fill="#2c3e50" opacity="0.3">
               𝄞
             </text>
             {isPlaying && (
               <line
                 x1={playheadX}
-                y1="40"
+                y1="50"
                 x2={playheadX}
-                y2="105"
+                y2="450"
                 stroke="#2ecc71"
                 strokeWidth="3"
                 strokeDasharray="4"
